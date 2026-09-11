@@ -1,0 +1,47 @@
+\begin{table*}[!thb]
+\centering
+\caption{Computational efficiency.}
+\label{tab:efficiency}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lcccccccccccc}
+\toprule
+\multirow{3}{*}{Model} 
+& \multicolumn{4}{c}{MOT17} 
+& \multicolumn{4}{c}{SOMPT22} 
+& \multicolumn{4}{c}{MOT20} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9} \cmidrule(lr){10-13}
+& \multicolumn{2}{c}{ByteTrack} & \multicolumn{2}{c}{BoT-SORT}
+& \multicolumn{2}{c}{ByteTrack} & \multicolumn{2}{c}{BoT-SORT}
+& \multicolumn{2}{c}{ByteTrack} & \multicolumn{2}{c}{BoT-SORT} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\cmidrule(lr){6-7} \cmidrule(lr){8-9}
+\cmidrule(lr){10-11} \cmidrule(lr){12-13}
+& FPS$\uparrow$ & Lat. (ms)$\downarrow$ & FPS$\uparrow$ & Lat. (ms)$\downarrow$
+& FPS$\uparrow$ & Lat. (ms)$\downarrow$ & FPS$\uparrow$ & Lat. (ms)$\downarrow$
+& FPS$\uparrow$ & Lat. (ms)$\downarrow$ & FPS$\uparrow$ & Lat. (ms)$\downarrow$ \\
+\midrule
+YOLO11-N       & 96.1{\scriptsize$\pm$9.1} & 10.4{\scriptsize$\pm$1.1} & \textbf{34.7}{\scriptsize$\pm$2.6} & \textbf{28.8}{\scriptsize$\pm$2.5} & 66.1{\scriptsize$\pm$6.2} & 15.1{\scriptsize$\pm$1.4} & \textbf{27.8}{\scriptsize$\pm$1.6} & \textbf{36.0}{\scriptsize$\pm$1.9} & 80.2{\scriptsize$\pm$7.8} & 12.5{\scriptsize$\pm$1.2} & 30.9{\scriptsize$\pm$2.4} & 32.4{\scriptsize$\pm$2.3} \\
+YOLO11-S       & 99.1{\scriptsize$\pm$5.0} & 10.1{\scriptsize$\pm$0.7} & 33.7{\scriptsize$\pm$2.1} & 29.7{\scriptsize$\pm$2.2} & 65.2{\scriptsize$\pm$4.2} & 15.3{\scriptsize$\pm$1.0} & 26.7{\scriptsize$\pm$1.4} & 37.5{\scriptsize$\pm$1.7} & 83.1{\scriptsize$\pm$5.8} & 12.0{\scriptsize$\pm$0.9} & 30.3{\scriptsize$\pm$3.3} & 33.0{\scriptsize$\pm$3.7} \\
+YOLO11-M       & 90.4{\scriptsize$\pm$4.0} & 11.1{\scriptsize$\pm$0.6} & 32.0{\scriptsize$\pm$2.2} & 31.2{\scriptsize$\pm$2.5} & 65.6{\scriptsize$\pm$1.8} & 15.2{\scriptsize$\pm$0.4} & 25.4{\scriptsize$\pm$1.6} & 39.3{\scriptsize$\pm$2.1} & 83.4{\scriptsize$\pm$3.3} & 12.0{\scriptsize$\pm$0.5} & 30.5{\scriptsize$\pm$3.1} & 32.8{\scriptsize$\pm$4.0} \\
+YOLO11-L       & 77.3{\scriptsize$\pm$2.1} & 12.9{\scriptsize$\pm$0.4} & 30.6{\scriptsize$\pm$2.0} & 32.6{\scriptsize$\pm$2.5} & 57.9{\scriptsize$\pm$2.0} & 17.3{\scriptsize$\pm$0.6} & 24.1{\scriptsize$\pm$1.9} & 41.5{\scriptsize$\pm$3.0} & 69.4{\scriptsize$\pm$4.2} & 14.4{\scriptsize$\pm$0.9} & 30.4{\scriptsize$\pm$2.6} & 32.9{\scriptsize$\pm$3.2} \\
+YOLO11-X       & 70.3{\scriptsize$\pm$3.3} & 14.2{\scriptsize$\pm$0.7} & 29.1{\scriptsize$\pm$2.0} & 34.4{\scriptsize$\pm$2.0} & 56.5{\scriptsize$\pm$1.5} & 17.7{\scriptsize$\pm$0.5} & 23.9{\scriptsize$\pm$0.9} & 41.9{\scriptsize$\pm$1.6} & 64.3{\scriptsize$\pm$2.6} & 15.6{\scriptsize$\pm$0.6} & 29.2{\scriptsize$\pm$2.5} & 34.2{\scriptsize$\pm$3.0} \\
+\midrule
+RT-DETR-L      & 46.2{\scriptsize$\pm$1.1} & 21.7{\scriptsize$\pm$0.6} & 23.9{\scriptsize$\pm$0.9} & 41.9{\scriptsize$\pm$1.7} & 37.2{\scriptsize$\pm$1.3} & 26.9{\scriptsize$\pm$1.0} & 20.8{\scriptsize$\pm$0.9} & 48.1{\scriptsize$\pm$2.2} & 44.0{\scriptsize$\pm$2.1} & 22.7{\scriptsize$\pm$1.1} & 23.6{\scriptsize$\pm$1.7} & 42.3{\scriptsize$\pm$2.8} \\
+RT-DETR-X      & 38.0{\scriptsize$\pm$0.6} & 26.3{\scriptsize$\pm$0.5} & 22.1{\scriptsize$\pm$0.8} & 45.3{\scriptsize$\pm$1.7} & 33.5{\scriptsize$\pm$0.9} & 29.8{\scriptsize$\pm$0.8} & 19.8{\scriptsize$\pm$1.3} & 50.5{\scriptsize$\pm$3.3} & 36.5{\scriptsize$\pm$1.2} & 27.4{\scriptsize$\pm$0.9} & 21.3{\scriptsize$\pm$1.8} & 47.0{\scriptsize$\pm$4.1} \\
+\midrule
+YOLO26-N (NMS) & 99.2{\scriptsize$\pm$10.1} & 10.1{\scriptsize$\pm$0.8} & 33.1{\scriptsize$\pm$1.8} & 30.2{\scriptsize$\pm$1.7} & 67.1{\scriptsize$\pm$4.0} & 14.9{\scriptsize$\pm$0.9} & 27.5{\scriptsize$\pm$1.6} & 36.4{\scriptsize$\pm$2.1} & 87.6{\scriptsize$\pm$3.5} & 11.4{\scriptsize$\pm$0.4} & 33.3{\scriptsize$\pm$3.6} & 30.0{\scriptsize$\pm$3.5} \\
+YOLO26-N (E2E) & \textbf{99.9}{\scriptsize$\pm$4.6} & \textbf{10.0}{\scriptsize$\pm$0.5} & 34.3{\scriptsize$\pm$2.0} & 29.1{\scriptsize$\pm$1.9} & \textbf{70.0}{\scriptsize$\pm$3.1} & \textbf{14.3}{\scriptsize$\pm$0.6} & 27.4{\scriptsize$\pm$1.4} & 36.5{\scriptsize$\pm$1.8} & 87.4{\scriptsize$\pm$5.5} & 11.4{\scriptsize$\pm$0.7} & 33.3{\scriptsize$\pm$3.2} & 30.0{\scriptsize$\pm$3.0} \\
+YOLO26-S (NMS) & 96.3{\scriptsize$\pm$2.3} & 10.4{\scriptsize$\pm$0.3} & 32.3{\scriptsize$\pm$1.5} & 30.9{\scriptsize$\pm$1.5} & 65.3{\scriptsize$\pm$3.5} & 15.3{\scriptsize$\pm$0.8} & 26.3{\scriptsize$\pm$1.5} & 38.1{\scriptsize$\pm$2.2} & 87.6{\scriptsize$\pm$2.8} & 11.4{\scriptsize$\pm$0.3} & 35.5{\scriptsize$\pm$2.5} & 28.2{\scriptsize$\pm$2.1} \\
+YOLO26-S (E2E) & 90.6{\scriptsize$\pm$4.2} & 11.0{\scriptsize$\pm$0.5} & 34.0{\scriptsize$\pm$0.7} & 29.4{\scriptsize$\pm$0.6} & 66.4{\scriptsize$\pm$2.9} & 15.1{\scriptsize$\pm$0.7} & 26.4{\scriptsize$\pm$1.5} & 37.8{\scriptsize$\pm$2.2} & \textbf{91.7}{\scriptsize$\pm$3.8} & \textbf{10.9}{\scriptsize$\pm$0.4} & \textbf{35.6}{\scriptsize$\pm$2.0} & \textbf{28.1}{\scriptsize$\pm$1.8} \\
+YOLO26-M (NMS) & 89.1{\scriptsize$\pm$4.6} & 11.2{\scriptsize$\pm$0.5} & 30.9{\scriptsize$\pm$1.6} & 32.4{\scriptsize$\pm$2.0} & 66.0{\scriptsize$\pm$1.2} & 15.2{\scriptsize$\pm$0.3} & 25.5{\scriptsize$\pm$1.4} & 39.2{\scriptsize$\pm$2.1} & 85.3{\scriptsize$\pm$2.7} & 11.7{\scriptsize$\pm$0.3} & 34.0{\scriptsize$\pm$2.4} & 29.4{\scriptsize$\pm$2.7} \\
+YOLO26-M (E2E) & 89.0{\scriptsize$\pm$8.9} & 11.2{\scriptsize$\pm$1.0} & 31.2{\scriptsize$\pm$2.4} & 32.1{\scriptsize$\pm$3.0} & 67.5{\scriptsize$\pm$1.2} & 14.8{\scriptsize$\pm$0.3} & 25.5{\scriptsize$\pm$1.9} & 39.2{\scriptsize$\pm$2.8} & 86.6{\scriptsize$\pm$3.1} & 11.5{\scriptsize$\pm$0.4} & 35.4{\scriptsize$\pm$1.8} & 28.3{\scriptsize$\pm$2.3} \\
+YOLO26-L (NMS) & 74.8{\scriptsize$\pm$2.6} & 13.4{\scriptsize$\pm$0.5} & 30.5{\scriptsize$\pm$0.4} & 32.8{\scriptsize$\pm$0.4} & 58.7{\scriptsize$\pm$2.0} & 17.0{\scriptsize$\pm$0.6} & 25.7{\scriptsize$\pm$1.1} & 38.9{\scriptsize$\pm$1.6} & 72.1{\scriptsize$\pm$2.7} & 13.9{\scriptsize$\pm$0.5} & 29.7{\scriptsize$\pm$2.9} & 33.7{\scriptsize$\pm$3.7} \\
+YOLO26-L (E2E) & 73.8{\scriptsize$\pm$3.9} & 13.6{\scriptsize$\pm$0.9} & 30.4{\scriptsize$\pm$0.5} & 32.9{\scriptsize$\pm$0.6} & 57.3{\scriptsize$\pm$3.3} & 17.5{\scriptsize$\pm$1.0} & 25.6{\scriptsize$\pm$1.2} & 39.1{\scriptsize$\pm$1.8} & 70.4{\scriptsize$\pm$1.3} & 14.2{\scriptsize$\pm$0.3} & 30.2{\scriptsize$\pm$2.8} & 33.1{\scriptsize$\pm$3.4} \\
+YOLO26-X (NMS) & 71.9{\scriptsize$\pm$2.8} & 13.9{\scriptsize$\pm$0.6} & 29.2{\scriptsize$\pm$1.2} & 34.3{\scriptsize$\pm$1.6} & 58.5{\scriptsize$\pm$1.5} & 17.1{\scriptsize$\pm$0.5} & 25.1{\scriptsize$\pm$0.4} & 39.9{\scriptsize$\pm$0.6} & 64.3{\scriptsize$\pm$3.0} & 15.6{\scriptsize$\pm$0.8} & 29.5{\scriptsize$\pm$1.9} & 33.9{\scriptsize$\pm$1.9} \\
+YOLO26-X (E2E) & 74.4{\scriptsize$\pm$2.1} & 13.4{\scriptsize$\pm$0.4} & 28.9{\scriptsize$\pm$1.1} & 34.6{\scriptsize$\pm$1.4} & 59.6{\scriptsize$\pm$1.1} & 16.8{\scriptsize$\pm$0.3} & 24.8{\scriptsize$\pm$0.8} & 40.3{\scriptsize$\pm$1.3} & 67.9{\scriptsize$\pm$1.6} & 14.7{\scriptsize$\pm$0.3} & 30.9{\scriptsize$\pm$1.4} & 32.4{\scriptsize$\pm$1.3} \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}

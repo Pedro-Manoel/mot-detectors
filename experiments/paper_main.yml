@@ -1,0 +1,36 @@
+# Experiment reported in the paper: 306 configurations x 5 runs.
+name: paper_main
+device: "0"
+runs: 5
+
+detector:
+  conf: 0.25
+  imgsz: 640
+  half: false
+
+trackeval:
+  root: TrackEval
+  python: .venvs/trackeval/Scripts/python.exe
+  do_preproc: false
+
+keep_tracks: true
+save_detections: true
+shared_detection: false   # the paper's protocol: detect and track in one loop, once per tracker
+
+paths:
+  output_root: results
+  dataset_root: datasets
+  prepared_root: prepared
+
+detectors:
+  - { family: yolo11, scales: [n, s, m, l, x], modes: [nms] }
+  - { family: rtdetr, scales: [l, x],          modes: [nms] }
+  - { family: yolo26, scales: [n, s, m, l, x], modes: [nms, end2end] }
+
+trackers: [bytetrack, botsort]
+reid_weights: osnet_x0_25_msmt17.pt
+
+sequences:
+  MOT17:   [MOT17-02, MOT17-04, MOT17-05]
+  MOT20:   [MOT20-02, MOT20-03, MOT20-05]
+  SOMPT22: [SOMPT22-07, SOMPT22-10, SOMPT22-12]

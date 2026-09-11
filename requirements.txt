@@ -1,0 +1,22 @@
+# Versions of the environment that produced the paper's results (the main ones are also
+# recorded in experiments/paper_environment.json).
+#
+# Install PyTorch with CUDA first; the PyPI wheel is CPU-only:
+#   pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu129
+#
+# TrackEval runs in its own virtual environment (see README.md).
+
+ultralytics==8.4.30
+boxmot==16.0.11
+opencv-python==4.13.0.92
+numpy==2.4.3
+pandas==2.3.3
+scipy==1.17.1
+PyYAML==6.0.3
+colorama==0.4.6
+pytest==9.1.1
+
+# Indirect dependencies that affect the numbers: the trackers' linear assignment (lapx)
+# and the FLOPs of Table I (ultralytics-thop).
+lapx==0.9.4
+ultralytics-thop==2.0.18

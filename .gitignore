@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+.venvs/
+venv/
+env/
+ENV/
+
+# Datasets (large - download separately, see README)
+datasets/
+
+# Prepared sequences (derived from the datasets)
+prepared/
+
+# Model weights (downloaded on first use)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+
+# TrackEval (cloned separately, see README)
+TrackEval/
+
+# Results: every run writes to results/<name>/; they are regenerated with mot.py, not stored
+results/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Tool caches
+.pytest_cache/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+*.tmp

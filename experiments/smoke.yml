@@ -1,0 +1,33 @@
+# Tiny subset for a quick end-to-end check of a setup (MOT17-05 is the smallest sequence).
+name: _smoke
+device: "0"
+runs: 1
+
+detector:
+  conf: 0.25
+  imgsz: 640
+  half: false
+
+trackeval:
+  root: TrackEval
+  python: .venvs/trackeval/Scripts/python.exe
+  do_preproc: false
+
+keep_tracks: true
+save_detections: true
+
+paths:
+  output_root: results
+  dataset_root: datasets
+  prepared_root: prepared
+
+detectors:
+  - { family: yolo11, scales: [n], modes: [nms] }
+  - { family: yolo26, scales: [n], modes: [nms, end2end] }
+  - { family: rtdetr, scales: [l], modes: [nms] }
+
+trackers: [bytetrack]
+reid_weights: osnet_x0_25_msmt17.pt
+
+sequences:
+  MOT17: [MOT17-05]
