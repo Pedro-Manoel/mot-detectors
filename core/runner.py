@@ -4,13 +4,19 @@ import csv
 import json
 import os
 import sys
+import traceback
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
+from . import data, detect, report
 from .config import Config, RunSpec, expand_grid, weight_filename
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def timestamp() -> str:
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 class _Tee:
@@ -38,8 +44,7 @@ class _Tee:
 def log_to(log_dir, command: str):
     log_dir = Path(log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = log_dir / f"{command}_{ts}.log"
+    path = log_dir / f"{command}_{timestamp()}.log"
     fh = open(path, "a", encoding="utf-8")
     old_out, old_err = sys.stdout, sys.stderr
     sys.stdout, sys.stderr = _Tee(old_out, fh), _Tee(old_err, fh)
@@ -47,7 +52,6 @@ def log_to(log_dir, command: str):
         print(f"# {command}  started {datetime.now().isoformat(timespec='seconds')}")
         yield path
     except BaseException:
-        import traceback
         traceback.print_exc()
         raise
     finally:
@@ -74,8 +78,6 @@ def run_dir_for(results_root: Path, spec: RunSpec, slug: str) -> Path:
 
 
 def portable_path(path) -> str:
-    # Relative to the repository root with forward slashes, so metrics.csv carries no
-    # machine-specific prefix; a results folder outside the repository keeps its full path.
     path = Path(path).resolve()
     try:
         return path.relative_to(PROJECT_ROOT).as_posix()
@@ -109,18 +111,9 @@ class ModelCache:
 
     def get(self, key, loader):
         if key != self._key:
-            self._model = None          # drop the cached model before loading the next one
             self._model = loader()
             self._key = key
         return self._model
-
-
-def atomic_write_text(path: Path, text: str) -> None:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, path)
 
 
 def write_csv_row_atomic(path: Path, row: dict) -> Path:
@@ -149,19 +142,12 @@ def read_ledger(ledger_path: Path) -> list[dict]:
     return [json.loads(ln) for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
 
 
-def _now() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-
 def _default_load_model(weight, mode, cfg: Config):
-    from . import detect
     detect.setup_gpu(cfg.device, cfg.half)
-    detect.patch_numpy_compat()
-    return detect.load_detector(weight, cfg.device, cfg.half, mode)
+    return detect.load_detector(weight, mode)
 
 
 def _default_load_frames(cfg: Config, dataset, sequence, max_frames):
-    from . import data
     frames, meta = data.load_sequence(Path(cfg.prepared_root).resolve(), dataset, sequence)
     if max_frames and max_frames > 0:
         frames = frames[:max_frames]
@@ -175,13 +161,9 @@ def run_batch(cfg: Config, force: bool = False, max_frames: int = 0, *,
     if process_fn is None:
         from . import pipeline
         process_fn = pipeline.process_group
-    if load_model_fn is None:
-        load_model_fn = _default_load_model
-    if load_frames_fn is None:
-        load_frames_fn = _default_load_frames
-    if aggregate_fn is None:
-        from . import report
-        aggregate_fn = report.aggregate
+    load_model_fn = load_model_fn or _default_load_model
+    load_frames_fn = load_frames_fn or _default_load_frames
+    aggregate_fn = aggregate_fn or report.aggregate
 
     slug = dev_slug(cfg.device)
     results_root = results_root_for(cfg, quicktest)
@@ -207,7 +189,6 @@ def run_batch(cfg: Config, force: bool = False, max_frames: int = 0, *,
             print(f"[group {gi}/{len(active)}] {gkey}")
             try:
                 weight = weight_filename(family, scale)
-                model = None            # release the previous group's model before a new one loads
                 model = cache.get((weight, mode), lambda: load_model_fn(weight, mode, cfg))
                 frames, meta = load_frames_fn(cfg, dataset, sequence, max_frames)
                 written = process_fn(key, specs, model, frames, meta, cfg,
@@ -219,13 +200,13 @@ def run_batch(cfg: Config, force: bool = False, max_frames: int = 0, *,
                 failed += 1
                 if not quicktest:
                     append_record(ledger, {"key": gkey, "status": "failed",
-                                           "error": repr(e), "ts": _now()})
+                                           "error": repr(e), "ts": timestamp()})
                 print(f"  FAILED: {e!r} (continuing)")
                 continue
             completed += len(written)
             if not quicktest:
                 append_record(ledger, {"key": gkey, "status": "done",
-                                       "runs": len(written), "ts": _now()})
+                                       "runs": len(written), "ts": timestamp()})
             if (not quicktest) and aggregate_every and gi % aggregate_every == 0:
                 try:
                     aggregate_fn(results_root)
@@ -251,7 +232,6 @@ def status(cfg: Config) -> dict:
     results_root = results_root_for(cfg)
     grid = expand_grid(cfg)
     done, pending = partition(grid, results_root, slug)
-    # A group that failed and later completed is no longer a failure: keep its latest record.
     latest = {r.get("key"): r for r in read_ledger(results_root / "_runs.jsonl")}
     failed = [r for r in latest.values() if r.get("status") == "failed"]
     return {"total": len(grid), "done": len(done), "pending": len(pending),

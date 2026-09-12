@@ -5,11 +5,11 @@ from statistics import mean, stdev
 
 def block(per_frame_ms: list[float]):
     if not per_frame_ms:
-        return (None, None, None)
+        return None, None, None
     avg = mean(per_frame_ms)
     std = stdev(per_frame_ms) if len(per_frame_ms) >= 2 else None
-    fps = (1000.0 / avg) if avg and avg > 0 else None
-    return (avg, std, fps)
+    fps = 1000.0 / avg if avg > 0 else None
+    return avg, std, fps
 
 
 def reconstruct_total(imread: list[float], det: list[float], track: list[float]) -> list[float]:

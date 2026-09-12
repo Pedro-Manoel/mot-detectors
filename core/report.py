@@ -5,7 +5,6 @@ from pathlib import Path
 import pandas as pd
 
 QUALITY_METRICS = ["HOTA", "IDF1", "MOTA", "IDSW", "Frag"]
-# Metrics where lower is better; the LaTeX tables bold the best value of each column.
 LOWER_IS_BETTER = {"IDSW", "Frag"}
 
 
@@ -27,12 +26,10 @@ MODEL_ORDER = [
     ("yolo26", "x", "nms", "YOLO26-X (NMS)"), ("yolo26", "x", "end2end", "YOLO26-X (E2E)"),
 ]
 
-# Tracker names as the paper prints them; the lowercase keys stay in file names and columns.
 TRACKER_NAMES = {"bytetrack": "ByteTrack", "botsort": "BoT-SORT"}
 
 
 def _ordered_trackers(names) -> list[str]:
-    # The paper's trackers in its order, then any other tracker found in the data.
     present = set(names)
     return [t for t in TRACKER_NAMES if t in present] + sorted(present - set(TRACKER_NAMES))
 
@@ -70,45 +67,11 @@ def efficiency_table(df: pd.DataFrame) -> pd.DataFrame:
         lat_mean = grp["avg_total_ms"].mean()
         recs.append(dict(
             family=fam, scale=sc, mode=mode, tracker=trk, dataset=ds,
-            # Reciprocal of the reported latency. Averaging per-run FPS instead would
-            # give mean(1/x) != 1/mean(x), up to ~10% off across sequences.
             fps_mean=1000.0 / lat_mean,
             fps_std=per_seq["fps_total"].std(ddof=1).mean(),
             lat_mean=lat_mean,
             lat_std=per_seq["avg_total_ms"].std(ddof=1).mean(),
         ))
-    return pd.DataFrame.from_records(recs)
-
-
-def per_sequence_table(df: pd.DataFrame) -> pd.DataFrame:
-    recs = []
-    for keys, grp in df.groupby(
-            ["dataset", "sequence", "model_family", "model_scale", "mode", "tracker"]):
-        rec = dict(zip(["dataset", "sequence", "family", "scale", "mode", "tracker"], keys))
-        rec["density"] = grp["density"].iloc[0]
-        for m in QUALITY_METRICS:
-            rec[m] = grp[m].mean()
-        lat = grp["avg_total_ms"].mean()
-        rec["FPS_mean"] = 1000.0 / lat              # reciprocal of the latency, as in efficiency_table
-        rec["FPS_std"] = grp["fps_total"].std(ddof=1)
-        rec["Lat_mean"] = lat
-        rec["Lat_std"] = grp["avg_total_ms"].std(ddof=1)
-        rec["Runs"] = len(grp)
-        recs.append(rec)
-    return pd.DataFrame.from_records(recs)
-
-
-def models_table(cfg) -> pd.DataFrame:
-    from . import detect
-    from .config import weight_filename
-
-    wanted = {(d.family, s) for d in cfg.detectors for s in d.scales}
-    recs = []
-    for fam, sc, mode, label in MODEL_ORDER:
-        if mode == "nms" and (fam, sc) in wanted:
-            params, gflops = detect.model_complexity(weight_filename(fam, sc), cfg.imgsz)
-            recs.append(dict(family=fam, scale=sc, label=label.replace(" (NMS)", ""),
-                             params_m=params, gflops=gflops))
     return pd.DataFrame.from_records(recs)
 
 
@@ -119,8 +82,7 @@ def _ordered_quality_rows(q: pd.DataFrame):
 
 
 def _best(values: dict, lower: bool) -> set:
-    # Every row that ties for the best printed value is marked.
-    values = {k: v for k, v in values.items() if v == v}     # drop NaN
+    values = {k: v for k, v in values.items() if pd.notna(v)}
     if not values:
         return set()
     best = (min if lower else max)(values.values())
@@ -128,7 +90,6 @@ def _best(values: dict, lower: bool) -> set:
 
 
 def _body(rows) -> list[str]:
-    # rows are (family, label, cells); a rule separates the detector families, as in the paper.
     width = max((len(label) for _, label, _ in rows), default=0)
     lines, prev = [], None
     for fam, label, cells in rows:
@@ -190,7 +151,7 @@ def _efficiency_to_latex(eff: pd.DataFrame, order: list[str]) -> str:
         if (label, c) not in text:
             return "--"
         mean, std = text[(label, c)]
-        spread = rf"{{\scriptsize$\pm${std}}}" if std else ""       # no spread for a single run
+        spread = rf"{{\scriptsize$\pm${std}}}" if std else ""
         return (rf"\textbf{{{mean}}}" if label in bold[c] else mean) + spread
 
     per = 2 * len(trackers)
@@ -218,27 +179,12 @@ def _efficiency_to_latex(eff: pd.DataFrame, order: list[str]) -> str:
     return "\n".join(lines)
 
 
-def models_to_latex(t: pd.DataFrame) -> str:
-    lines = [r"\begin{table}[t]", r"\centering",
-             r"\caption{Parameters and FLOPs of the evaluated detectors.}", r"\label{tab:models}",
-             r"\scriptsize", r"\setlength{\tabcolsep}{4pt}", r"\begin{tabular}{lcc}", r"\toprule",
-             r"Model & Parameters (Millions) & FLOPs (Billions) \\", r"\midrule",
-             *_body([(r.family, r.label, [f"{r.params_m:.1f}", f"{r.gflops:.1f}"])
-                     for r in t.itertuples()]),
-             r"\bottomrule", r"\end{tabular}", r"\end{table}"]
-    return "\n".join(lines)
-
-
 def build_tables(all_results_csv: Path, out_dir: Path) -> list[Path]:
-    from . import analysis
-
     df = pd.read_csv(all_results_csv)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
-
-    trackers = _ordered_trackers(df["tracker"])
-    for trk in trackers:
+    for trk in _ordered_trackers(df["tracker"]):
         q = quality_table(df, trk)
         q.to_csv(out_dir / f"quality_{trk}.csv")
         (out_dir / f"quality_{trk}.tex").write_text(_quality_to_latex(q, trk), encoding="utf-8")
@@ -247,26 +193,4 @@ def build_tables(all_results_csv: Path, out_dir: Path) -> list[Path]:
     efficiency.to_csv(out_dir / "efficiency.csv", index=False)
     (out_dir / "efficiency.tex").write_text(_efficiency_to_latex(efficiency, benchmark_order(df)),
                                             encoding="utf-8")
-    per_sequence_table(df).to_csv(out_dir / "per_sequence.csv", index=False)
-    written += [out_dir / "efficiency.csv", out_dir / "efficiency.tex", out_dir / "per_sequence.csv"]
-
-    def _emit(name: str, frame: pd.DataFrame, index: bool = False) -> None:
-        p = out_dir / name
-        frame.to_csv(p, index=index)
-        written.append(p)
-
-    for trk in trackers:
-        _emit(f"hota_decomposition_{trk}.csv", analysis.hota_decomposition_table(df, trk), index=True)
-        _emit(f"attribution_{trk}.csv", analysis.attribution_table(df, trk))
-        _emit(f"degradation_{trk}.csv", analysis.degradation_table(df, trk))
-        ci = pd.concat([analysis.summary_ci_table(df, trk, m)
-                        for m in QUALITY_METRICS], ignore_index=True)
-        _emit(f"quality_ci_{trk}.csv", ci)
-        seqci = pd.concat([analysis.between_sequence_ci(df, trk, m)
-                           for m in QUALITY_METRICS], ignore_index=True)
-        _emit(f"quality_seqci_{trk}.csv", seqci)
-        sig = analysis.nms_vs_e2e_significance(df, trk)
-        _emit(f"nms_vs_e2e_significance_{trk}.csv", sig)
-    _emit("hyperparameters.csv", analysis.tracker_hyperparameters())
-
-    return written
+    return written + [out_dir / "efficiency.csv", out_dir / "efficiency.tex"]

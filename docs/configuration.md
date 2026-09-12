@@ -2,9 +2,8 @@
 
 An experiment is one YAML file. The CLI expands it into the run grid and writes results
 under `results/<name>/`. The repository holds `paper_main.yml` (the grid reported in the
-paper), `balanced_12seq.yml` (proposed extended grid) and `smoke.yml` (tiny subset). `run`,
-`status` and `analyze` accept `--name <other>` to use `results/<other>/` for the same grid,
-for instance a second run to compare with the first.
+paper) and `smoke.yml` (tiny subset). `run`, `status` and `analyze` accept `--name <other>` to
+use `results/<other>/` for the same grid, for instance a second run to compare with the first.
 
 ## Full example
 
@@ -24,8 +23,6 @@ trackeval:
   do_preproc: false              # TrackEval preprocessing; a no-op on the pedestrian-only GT
 
 keep_tracks: true                # keep mot_results.txt per run (reproducibility)
-save_detections: true            # persist raw detections for the detection diagnostics
-shared_detection: false          # false is the paper's protocol: detect and track in one loop
 
 paths:
   output_root: results           # results/<name>/...
@@ -60,8 +57,6 @@ sequences:
 | `trackeval.python` | str | required | TrackEval venv interpreter; a relative path is resolved to absolute, and the Windows (`Scripts/python.exe`) and POSIX (`bin/python`) venv layouts are interchangeable. |
 | `trackeval.do_preproc` | bool | `false` | TrackEval's distractor preprocessing. The paper uses `false`; `true` changes nothing on the pedestrian-only GT that `prepare` writes, so standard MOTChallenge scoring also needs the full GT (see the README, *Scoring choice*). |
 | `keep_tracks` | bool | `true` | Keep the raw `mot_results.txt` per run. |
-| `save_detections` | bool | `false` | Persist raw detections per (detector, sequence); required by the detection diagnostics. |
-| `shared_detection` | bool | `false` | `false` is the paper's protocol: per tracker and repetition, one loop reads, detects and tracks each frame. `true` runs detection once per repetition and replays the boxes through each tracker: half the detector work, but FPS not comparable with the paper's. |
 | `paths.output_root` | str | `results` | Root for results. |
 | `paths.dataset_root` | str | `datasets` | Raw datasets. |
 | `paths.prepared_root` | str | `prepared` | Prepared sequences. |

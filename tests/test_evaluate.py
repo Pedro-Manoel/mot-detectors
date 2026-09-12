@@ -1,11 +1,12 @@
 from pathlib import Path
-from core.evaluate import _parse_one_summary_file, parse_trackeval_summary
+
+from core.evaluate import parse_trackeval_summary
 
 
 def test_parse_summary_row(tmp_path: Path):
-    f = tmp_path / "pedestrian_summary.txt"
-    f.write_text("HOTA IDF1 MOTA IDSW Frag\n34.43 40.20 30.24 45 81\n", encoding="utf-8")
-    parsed = _parse_one_summary_file(f)
+    (tmp_path / "pedestrian_summary.txt").write_text(
+        "HOTA IDF1 MOTA IDSW Frag\n34.43 40.20 30.24 45 81\n", encoding="utf-8")
+    parsed = parse_trackeval_summary(tmp_path)
     assert parsed["HOTA"] == 34.43
     assert parsed["IDSW"] == 45
     assert parsed["IDF1"] == 40.20

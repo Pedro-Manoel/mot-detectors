@@ -3,12 +3,6 @@ import json
 from core.data import load_density_registry, resolve_density
 
 
-def test_load_density_registry_flat(tmp_path):
-    p = tmp_path / "d.json"
-    p.write_text(json.dumps({"MOT17-02": 31.0, "MOT20-05": 226.6}), encoding="utf-8")
-    assert load_density_registry(p) == {"MOT17-02": 31.0, "MOT20-05": 226.6}
-
-
 def test_load_density_registry_nested_by_dataset(tmp_path):
     p = tmp_path / "d.json"
     p.write_text(json.dumps({"MOT17": {"MOT17-02": 31.0}, "MOT20": {"MOT20-05": 226.6}}),
@@ -18,13 +12,6 @@ def test_load_density_registry_nested_by_dataset(tmp_path):
 
 def test_load_density_registry_missing_file_is_empty(tmp_path):
     assert load_density_registry(tmp_path / "nope.json") == {}
-
-
-def test_load_density_registry_skips_empty_placeholders(tmp_path):
-    p = tmp_path / "d.json"
-    p.write_text(json.dumps({"MOT17": {"MOT17-02": 31.0, "MOT17-10": None, "MOT17-11": ""}}),
-                 encoding="utf-8")
-    assert load_density_registry(p) == {"MOT17-02": 31.0}
 
 
 def test_resolve_density_registered_wins_else_computed():

@@ -1,4 +1,3 @@
-# Experiment reported in the paper: 306 configurations x 5 runs.
 name: paper_main
 device: "0"
 runs: 5
@@ -14,8 +13,6 @@ trackeval:
   do_preproc: false
 
 keep_tracks: true
-save_detections: true
-shared_detection: false   # the paper's protocol: detect and track in one loop, once per tracker
 
 paths:
   output_root: results

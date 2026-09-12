@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from core import evaluate, reproduce
 from core.config import load_config, weight_filename
@@ -54,14 +55,14 @@ def test_check_files_compares_weights_and_prepared_gt(tmp_path, monkeypatch):
         gt = tmp_path / "prepared" / "MOT17" / seq / "gt" / "gt.txt"
         gt.parent.mkdir(parents=True)
         gt.write_bytes(content)
-    manifest = {
+    env = {
         "weights_sha256": {"yolo11n.pt": reproduce.file_sha256(tmp_path / "yolo11n.pt"),
-                           "yolo26x.pt": "0" * 64},       # not used by this config
-        "prepared_gt_sha256": {"MOT17-02": hashlib.sha256(b"1,1\n").hexdigest(),  # LF form
+                           "yolo26x.pt": "0" * 64},
+        "prepared_gt_sha256": {"MOT17-02": hashlib.sha256(b"1,1\n").hexdigest(),
                                "MOT17-04": "0" * 64,
                                "MOT17-05": "0" * 64},
     }
-    status = {item: s for s, item, _ in reproduce.check_files(cfg, manifest)}
+    status = {item: s for s, item, _ in reproduce.check_files(cfg, env)}
     assert status == {"yolo11n.pt": "PASS", "GT MOT17-02": "PASS",
                       "GT MOT17-04": "FAIL", "GT MOT17-05": "WARN"}
 
@@ -102,7 +103,6 @@ def test_compare_passes_within_tolerance_and_fails_beyond(tmp_path):
 
 
 def test_resolve_python_keeps_the_venv_symlink(tmp_path):
-    import pytest
     base = tmp_path / "base" / "python"
     base.parent.mkdir()
     base.write_text("")
@@ -126,7 +126,7 @@ def test_check_reports_a_missing_trackeval_interpreter(tmp_path):
 def test_compare_restricts_a_partial_run_to_the_shared_sequences(tmp_path):
     ref = _results(tmp_path, "ref")
     full = pd.read_csv(ref / "all_results.csv")
-    full.loc[full["sequence"].str.endswith("-B"), "HOTA"] += 10.0    # the two sequences differ a lot
+    full.loc[full["sequence"].str.endswith("-B"), "HOTA"] += 10.0
     full.to_csv(ref / "all_results.csv", index=False)
     part = tmp_path / "part"
     part.mkdir()

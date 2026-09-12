@@ -1,12 +1,15 @@
+import csv
+import io
 from pathlib import Path
 
-from core.config import Config, DetectorSpec, expand_grid
+import pytest
+
+from core.config import Config, DetectorSpec, expand_grid, load_config
 from core.runner import (
-    run_dir_name, results_root_for, run_dir_for, is_done, partition,
-    append_record, read_ledger, atomic_write_text, write_csv_row_atomic, run_batch,
-    group_specs, ModelCache,
+    PROJECT_ROOT, ModelCache, _Tee, append_record, group_specs, is_done, log_to, partition,
+    portable_path, read_ledger, results_root_for, run_batch, run_dir_for, run_dir_name, status,
+    write_csv_row_atomic,
 )
-from core.config import load_config, expand_grid as _expand
 
 PAPER = Path(__file__).resolve().parent.parent / "experiments" / "paper_main.yml"
 
@@ -92,15 +95,7 @@ def test_ledger_append_and_read_roundtrip(tmp_path):
     assert recs[1]["status"] == "failed"
 
 
-def test_atomic_write_leaves_no_tmp_and_writes_content(tmp_path):
-    target = tmp_path / "metrics.csv"
-    atomic_write_text(target, "header\nrow\n")
-    assert target.read_text(encoding="utf-8") == "header\nrow\n"
-    assert not (tmp_path / "metrics.csv.tmp").exists()
-
-
 def test_write_csv_row_atomic_roundtrip(tmp_path):
-    import csv
     p = tmp_path / "run" / "metrics.csv"
     write_csv_row_atomic(p, {"HOTA": 1.5, "mode": "nms"})
     rows = list(csv.DictReader(p.open(newline="", encoding="utf-8")))
@@ -157,11 +152,10 @@ def test_run_batch_isolates_group_failures(tmp_path):
 
 def test_group_specs_groups_by_detector_sequence(tmp_path):
     cfg = load_config(PAPER)
-    grid = _expand(cfg)
+    grid = expand_grid(cfg)
     groups = group_specs(grid)
     assert len(groups) == 153
     for key, specs in groups:
-        ds, seq, fam, sc, mode = key
         for s in specs:
             assert (s.dataset, s.sequence, s.family, s.scale, s.mode) == key
         assert len(specs) == len(cfg.trackers) * cfg.runs
@@ -169,7 +163,6 @@ def test_group_specs_groups_by_detector_sequence(tmp_path):
 
 
 def test_log_to_writes_timestamped_log_and_captures_output(tmp_path):
-    from core.runner import log_to
     with log_to(tmp_path / "logs", "run") as path:
         print("audit-marker-xyz")
     assert path.exists()
@@ -179,8 +172,6 @@ def test_log_to_writes_timestamped_log_and_captures_output(tmp_path):
 
 
 def test_tee_write_survives_closed_file(tmp_path):
-    import io
-    from core.runner import _Tee
     sink = io.StringIO()
     fh = open(tmp_path / "x.log", "w", encoding="utf-8")
     tee = _Tee(sink, fh)
@@ -192,8 +183,6 @@ def test_tee_write_survives_closed_file(tmp_path):
 
 
 def test_log_to_captures_exception_traceback(tmp_path):
-    import pytest
-    from core.runner import log_to
     holder = {}
     with pytest.raises(ValueError):
         with log_to(tmp_path / "logs", "run") as p:
@@ -205,8 +194,7 @@ def test_log_to_captures_exception_traceback(tmp_path):
 
 
 def test_group_specs_orders_same_detector_contiguously(tmp_path):
-    cfg = load_config(PAPER)
-    groups = group_specs(_expand(cfg))
+    groups = group_specs(expand_grid(load_config(PAPER)))
     triples = [(k[2], k[3], k[4]) for k, _ in groups]
     seen, prev = set(), None
     for t in triples:
@@ -250,14 +238,12 @@ def test_run_batch_force_reprocesses_all(tmp_path):
 
 
 def test_portable_path_is_relative_to_the_repository(tmp_path):
-    from core.runner import PROJECT_ROOT, portable_path
     rel = "results/t/MOT17/MOT17-02/yolo11_n_nms_bytetrack_0_run01/mot_results.txt"
     assert portable_path(PROJECT_ROOT / rel) == rel
-    assert portable_path(tmp_path) == str(tmp_path.resolve())      # outside the repository
+    assert portable_path(tmp_path) == str(tmp_path.resolve())
 
 
 def test_status_forgets_a_failure_once_the_group_completes(tmp_path):
-    from core.runner import status
     cfg = tiny_cfg(tmp_path)
     ledger = results_root_for(cfg) / "_runs.jsonl"
     append_record(ledger, {"key": "MOT17/MOT17-02/yolo11/n/nms", "status": "failed", "error": "boom"})

@@ -1,4 +1,3 @@
-# Tiny subset for a quick end-to-end check of a setup (MOT17-05 is the smallest sequence).
 name: _smoke
 device: "0"
 runs: 1
@@ -14,7 +13,6 @@ trackeval:
   do_preproc: false
 
 keep_tracks: true
-save_detections: true
 
 paths:
   output_root: results

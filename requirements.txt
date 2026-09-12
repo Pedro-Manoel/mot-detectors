@@ -16,7 +16,5 @@ PyYAML==6.0.3
 colorama==0.4.6
 pytest==9.1.1
 
-# Indirect dependencies that affect the numbers: the trackers' linear assignment (lapx)
-# and the FLOPs of Table I (ultralytics-thop).
+# Indirect dependency that affects the numbers: the trackers' linear assignment.
 lapx==0.9.4
-ultralytics-thop==2.0.18

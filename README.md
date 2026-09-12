@@ -7,8 +7,12 @@ It evaluates the YOLO11, RT-DETR and YOLO26 detector families (including a YOLO2
 NMS-vs-end-to-end ablation) combined with the ByteTrack and BoT-SORT trackers on MOT17,
 MOT20 and SOMPT22, scoring with TrackEval (HOTA, IDF1, MOTA, IDSW, Frag) plus FPS and
 latency. The paper's results ship in [`paper_results/`](paper_results/): its 1530 runs in one
-table, the tables computed from them and the run's manifest. Running the experiments
-regenerates them (see [Reproducing the paper](#reproducing-the-paper)).
+table and the tables computed from them. Running the experiments regenerates them (see
+[Reproducing the paper](#reproducing-the-paper)).
+
+![Experimental protocol](docs/images/experimental_protocol.png)
+
+*Experimental protocol.*
 
 Developed on Windows 11 with an NVIDIA RTX 4070 Ti Super; the code also runs on Linux.
 
@@ -28,9 +32,9 @@ mot.py analyze  experiments/paper_main.yml  ->  results/paper_main/tables/*.csv,
 
 ```
 mot-detectors/
-├── mot.py                 # CLI: prepare | run | status | analyze | models | check | compare
+├── mot.py                 # CLI: prepare | run | status | analyze | check | compare
 ├── core/                  # pipeline package
-│   ├── config.py          # YAML to Config; expands the run grid; run manifest
+│   ├── config.py          # YAML to Config; expands the run grid
 │   ├── data.py            # prepare/load sequences (GT filtering, density, frames)
 │   ├── detect.py          # detector: load, predict, parse (Ultralytics)
 │   ├── track.py           # tracker: load, parse outputs (BoxMOT)
@@ -39,16 +43,13 @@ mot-detectors/
 │   ├── metrics.py         # timing reconstruction (imread + det + track per frame)
 │   ├── runner.py          # resumable batch loop
 │   ├── report.py          # aggregate and generate tables
-│   ├── analysis.py        # HOTA decomposition, CIs, significance tests
-│   ├── diagnostics.py     # detection-level diagnostics (duplicates, jitter, AP/AR)
 │   └── reproduce.py       # environment check and comparison of two runs
 ├── experiments/           # YAML experiment definitions
 │   ├── paper_main.yml          # the paper's grid: 34 configurations x 9 sequences x 5 runs
-│   ├── balanced_12seq.yml      # proposed extended grid: the same 34 on 12 sequences
 │   ├── smoke.yml               # tiny subset for a quick end-to-end check
 │   └── paper_environment.json  # the paper's library versions and weight/GT hashes
-├── paper_results/         # the paper's runs: all_results.csv (1530 runs), tables, manifest.json
-├── docs/                  # architecture and configuration guides
+├── paper_results/         # the paper's runs: all_results.csv (1530 runs) and tables
+├── docs/                  # architecture and configuration guides, images/ (protocol figure)
 ├── tests/                 # unit tests, no GPU needed
 ├── densities.json         # published density of each sequence
 └── requirements.txt       # pinned versions used for the paper
@@ -139,10 +140,9 @@ datasets/
 ```
 
 MOT17 ships every sequence three times (`-DPM`, `-FRCNN`, `-SDP`) with the same frames and
-GT; `prepare` uses the `-FRCNN` copy. The SOMPT22 folder naming variants are resolved
-automatically (`data.resolve_sequence_path`). `mot.py prepare` filters the GT to pedestrians
-and puts the frames in `prepared/`: copies on Windows (about 7 GB for the nine sequences),
-symbolic links on Linux.
+GT; `prepare` uses the `-FRCNN` copy. `mot.py prepare` filters the GT to pedestrians and puts
+the frames in `prepared/`: copies on Windows (about 7 GB for the nine sequences), symbolic
+links on Linux.
 
 ### 4. Weights
 
@@ -174,19 +174,15 @@ python mot.py run experiments/paper_main.yml
 # 3. Build the tables (no GPU needed)
 python mot.py analyze experiments/paper_main.yml
 
-# 4. Table I: parameters and FLOPs of the twelve detectors (loads the weights)
-python mot.py models experiments/paper_main.yml
-
-# 5. Compare with the paper's runs
+# 4. Compare with the paper's runs
 python mot.py compare paper_results results/paper_main
 ```
 
 `analyze` writes `results/paper_main/tables/`: `quality_bytetrack.tex`, `quality_botsort.tex`
 and `efficiency.tex` are Tables II, III and IV of the paper in its LaTeX format, with the best
-value of each column in bold, and `models` adds Table I (`models.tex`); the other tables are
-listed under [Output](#output). Quality metrics are expected to match the paper within
-run-to-run noise, which the smoke test checks in a few minutes; FPS and latency depend on
-the hardware.
+value of each column in bold, each also as CSV. Quality metrics are expected to match the paper
+within run-to-run noise, which the smoke test checks in a few minutes; FPS and latency depend
+on the hardware.
 
 **`check`** fails on anything that breaks a reproduction (a missing package, no CUDA,
 TrackEval not importable in its environment, a weight file or a prepared GT whose SHA-256
@@ -196,7 +192,7 @@ detector weights and the ReID weights. The prepared GT is checked independently 
 endings, so Windows and Linux produce the same hashes.
 
 **`compare`** checks a results folder against a reference: the paper's runs in
-`paper_results/`, as in step 5, or a run of your own, for instance against a second run
+`paper_results/`, as in step 4, or a run of your own, for instance against a second run
 written to another folder with `--name`:
 
 ```bash
@@ -220,11 +216,9 @@ measurement protocol, so a full run takes about as long.
 ### The paper's results (no GPU)
 
 `paper_results/` holds the paper's run: `all_results.csv` has one row per run (1530 rows with
-the quality metrics, timing and settings), `tables/` the tables computed from it plus Table I
-(`models.*`), and
-`manifest.json` the provenance of the run. The paper's quality and efficiency numbers, and the
-statistics derived from them, can be checked there without running anything; the tables are
-rebuilt from `all_results.csv` with
+the quality metrics, timing and settings) and `tables/` Tables II to IV as CSV and LaTeX. The
+paper's numbers can be checked there without running anything; the tables are rebuilt from
+`all_results.csv` with
 
 ```bash
 python mot.py analyze experiments/paper_main.yml --results paper_results
@@ -234,13 +228,12 @@ python mot.py analyze experiments/paper_main.yml --results paper_results
 
 `experiments/smoke.yml` checks a setup in a few minutes: four configurations (YOLO11-N,
 YOLO26-N with NMS and end-to-end, RT-DETR-L) with ByteTrack, one run on MOT17-05, the
-smallest sequence (640x480). It goes through the same code as the full grid, including the saved
-detections and the detection diagnostics.
+smallest sequence (640x480). It goes through the same code as the full grid.
 
 ```bash
 python mot.py check   experiments/smoke.yml   # environment, weights and GT of this subset
 python mot.py run     experiments/smoke.yml   # prepares MOT17-05, writes results/_smoke/
-python mot.py analyze experiments/smoke.yml   # tables, detection_diagnostics.csv, box_jitter.csv
+python mot.py analyze experiments/smoke.yml   # quality and efficiency tables
 python mot.py compare paper_results results/_smoke   # against the paper's runs on MOT17-05
 ```
 
@@ -261,19 +254,13 @@ python mot.py run    experiments/paper_main.yml --max-frames 20  # fast partial 
 
 ### Measurement protocol
 
-By default every experiment measures as the paper did: for each tracker and repetition, one
-loop reads, detects and tracks each frame, and the per-frame time `imread + det + track`, from
-which `fps_total` is computed, is measured in that loop. Detection therefore runs once per
-tracker, and the work a tracker does between frames can slow down the next detection; this is
-why, in the paper's runs, BoT-SORT's detection time is higher than ByteTrack's for the same
-detector (149 of 153 detector-sequence pairs). Quality (HOTA, IDF1, MOTA, IDSW, Frag) is
-averaged over the `runs` repetitions.
-
-`shared_detection: true` runs detection once per repetition instead and replays the boxes
-through each tracker. This halves the detector work and times each phase on its own, so a
-light tracker's FPS is never affected by a heavy one; that FPS is a mild upper bound on
-deployment throughput and is not comparable with the paper's. Quality is the same within
-run-to-run noise (within 0.02 HOTA of the paper's mean on the smoke subset).
+Every experiment measures as the paper did: for each tracker and repetition, one loop reads,
+detects and tracks each frame, and the per-frame time `imread + det + track`, from which
+`fps_total` is computed, is measured in that loop. Detection therefore runs once per tracker,
+and the work a tracker does between frames can slow down the next detection; this is why, in
+the paper's runs, BoT-SORT's detection time is higher than ByteTrack's for the same detector
+(149 of 153 detector-sequence pairs). Quality (HOTA, IDF1, MOTA, IDSW, Frag) is averaged over
+the `runs` repetitions.
 
 Timing runs are not parallelized on the GPU, because contention would corrupt the FPS.
 
@@ -283,9 +270,8 @@ Timing runs are not parallelized on the GPU, because contention would corrupt th
 
 Everything lives in the YAML; [docs/configuration.md](docs/configuration.md) is the full
 reference. Adding or removing a sequence is one line under `sequences:`; scales, modes,
-trackers, repetitions, thresholds and the measurement protocol (`shared_detection`) each have
-their own key. To extend the study with a new detector, tracker or dataset, see the extension
-points in
+trackers, repetitions and thresholds each have their own key. To extend the study with a new
+detector, tracker or dataset, see the extension points in
 [docs/architecture.md](docs/architecture.md).
 
 ```yaml
@@ -302,30 +288,19 @@ sequences:                          # the paper's set: 3 per benchmark
 
 `paper_main.yml` is the experiment reported in the paper: 17 detector variants (12 detectors,
 YOLO26 in both inference modes) and 2 trackers give 34 configurations, each run 5 times on 3
-sequences per benchmark (9 in total): 1530 runs, the rows of
-`paper_results/all_results.csv`. The densities in the comments are
-the published values from `densities.json`; they average 28.2 for MOT17, 47.7 for SOMPT22
-and 149.2 for MOT20, the three figures quoted in the paper.
-
-A second config, [`experiments/balanced_12seq.yml`](experiments/balanced_12seq.yml), drafts
-an extended grid with the same 34 configurations on 4 sequences per benchmark (12 in total). Four is
-the balanced level allowed by the 4 MOT20 train sequences with public GT, and the densities
-spread from about 8 to about 227 to trace the density curve more finely. It is a different
-experiment, it has never been executed, and it writes to `results/balanced_12seq/`.
-Reproducing the paper uses `paper_main.yml` only.
+sequences per benchmark (9 in total): 1530 runs, the rows of `paper_results/all_results.csv`.
+The densities in the comments are the published values from `densities.json`; they average
+28.2 for MOT17, 47.7 for SOMPT22 and 149.2 for MOT20, the three figures quoted in the paper.
 
 ---
 
 ## Reproducibility notes and caveats
 
-Each experiment writes a `manifest.json` with the git commit, library versions, GPU and
-settings. The paper's run predates that feature, so
-[paper_results/manifest.json](paper_results/manifest.json) was reconstructed from evidence
-(settings from the per-run rows, library versions from their install timestamps, file
-hashes); its `provenance` field says how, and
-[experiments/paper_environment.json](experiments/paper_environment.json) holds the part that
-`check` compares against. The run itself used the pre-refactor scripts, whose detector,
-tracker and scoring settings this pipeline keeps. Six points deserve attention.
+[experiments/paper_environment.json](experiments/paper_environment.json) records the
+environment of the paper's run (library versions, TrackEval, and the SHA-256 of the weights
+and of the prepared GT), which `check` compares against. The run itself used the pre-refactor
+scripts, whose detector, tracker and scoring settings this pipeline keeps. Four points deserve
+attention.
 
 **Scoring choice.** TrackEval runs with `do_preproc: false`, and the GT is pre-filtered to
 pedestrians at preparation time (`conf==1, class==1`, dropping distractor classes and ignore
@@ -333,18 +308,16 @@ regions). The two are coupled: standard MOTChallenge distractor suppression is n
 so absolute MOTA and HOTA-DetA are lower bounds and are not directly comparable to the
 public MOTChallenge leaderboard. The protocol is uniform, every configuration being scored
 identically, so the relative comparisons behind the study's conclusions remain fair. Setting
-`do_preproc: true` on the pedestrian-only GT
-is a no-op, as there is nothing left to suppress; standard scoring would also require
-re-preparing the sequences with the full GT.
+`do_preproc: true` on the pedestrian-only GT is a no-op, as there is nothing left to suppress;
+standard scoring would also require re-preparing the sequences with the full GT.
 
 **Detector and tracker settings.** Every detector runs at `imgsz=640` with `conf=0.25` on
 the person class only; NMS-based inference uses `nms_iou=0.7` (the Ultralytics default,
 pinned in `detect.NMS_IOU` and irrelevant to the NMS-free heads). Both trackers keep the
-BoxMOT defaults, listed with their source in `tables/hyperparameters.csv`; the frame rate
-comes from each sequence's `seqinfo.ini`. `conf=0.25` truncates the low-confidence second
-association of ByteTrack (BoxMOT accepts boxes from `min_conf=0.1`, and the high-score
-threshold is 0.45) and of BoT-SORT, but it is the same for all configurations, so the
-comparisons remain fair.
+BoxMOT defaults (`core/track.py`); the frame rate comes from each sequence's `seqinfo.ini`.
+`conf=0.25` truncates the low-confidence second association of ByteTrack (BoxMOT accepts
+boxes from `min_conf=0.1`, and the high-score threshold is 0.45) and of BoT-SORT, but it is
+the same for all configurations, so the comparisons remain fair.
 
 **Density figure.** Per-sequence densities come from the `densities.json` registry, which
 holds the published value of each of the paper's nine sequences (MOT20 averages 149.2 in the
@@ -360,16 +333,6 @@ efficiency metric, so the fallback never changes a reported result.
 bit-deterministic: run-to-run HOTA varies by about 0.03 on average, and the tables report the
 mean of 5 runs.
 
-**E2E calibration.** The NMS-vs-end-to-end comparison applies the same `conf=0.25` to both
-YOLO26 heads. The paired test (Wilcoxon over scale-by-sequence pairs, runs averaged)
-confirms that E2E is worse and more fragmented, but it does not separate a fundamental E2E
-limitation from a score-calibration mismatch of the uncalibrated NMS-free head. A `conf`
-sweep on the E2E head would settle this.
-
-**Robustness axis.** The robustness evidence in scope is scene-density degradation from
-MOT17 to MOT20. Input-corruption robustness (noise, blur, compression, weather) is a
-distinct axis that this study does not evaluate.
-
 ---
 
 ## Output
@@ -378,22 +341,10 @@ distinct axis that this study does not evaluate.
 MOTA/MOTP, IDF1/IDR/IDP, IDSW/Frag, Recall/Precision, FP/FN/MT/ML and timing
 (`avg_total_ms`, `fps_total`, plus the detect/track/pre/inf/post breakdown).
 
-`mot.py analyze` writes to `results/<name>/tables/`:
-
-- Core tables: `quality_{bytetrack,botsort}` (per-benchmark HOTA/IDF1/MOTA/IDSW/Frag),
-  `efficiency` (latency and FPS = 1000 / latency, with the run-to-run std of each), both also
-  as `.tex` in the paper's format (Tables II to IV), and `per_sequence` (full detail).
-- Analyses over the same data, no GPU needed: `hota_decomposition_*` (DetA/AssA/LocA),
-  `degradation_*` (MOT17 to MOT20 delta, separating detection from association),
-  `attribution_*` (recall and precision against association), `quality_ci_*` and
-  `quality_seqci_*` (mean and 95% CI over runs and over sequences),
-  `nms_vs_e2e_significance_*` (paired Wilcoxon over scale-by-sequence pairs, runs averaged),
-  `hyperparameters` (the effective BoxMOT parameters of both trackers and their source).
-- Detection diagnostics: `detection_diagnostics` (duplicate-hypothesis rate, AP@0.5, recall
-  and precision per detector-sequence), emitted only when the run used
-  `save_detections: true`, and `box_jitter`, emitted when the per-run tracks are kept.
-- `mot.py models` adds `models.csv` and `models.tex` (Table I: parameters and GFLOPs of each
-  detector after layer fusion, as Ultralytics computes them; it loads the weights).
+`mot.py analyze` writes to `results/<name>/tables/` the paper's Tables II to IV, each as `.csv`
+and as `.tex` in the paper's format: `quality_{bytetrack,botsort}` (per-benchmark
+HOTA/IDF1/MOTA/IDSW/Frag) and `efficiency` (latency and FPS = 1000 / latency, with the
+run-to-run std of each).
 
 ---
 

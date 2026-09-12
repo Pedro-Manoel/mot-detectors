@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import platform
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,8 +34,6 @@ class Config:
     output_root: str
     dataset_root: str
     prepared_root: str
-    save_detections: bool = False
-    shared_detection: bool = False
 
 
 @dataclass
@@ -54,9 +50,7 @@ class RunSpec:
 
 
 def is_valid_combination(family: str, mode: str) -> bool:
-    if mode == "end2end" and family != "yolo26":
-        return False
-    return True
+    return mode != "end2end" or family == "yolo26"
 
 
 def weight_filename(family: str, scale: str) -> str:
@@ -66,7 +60,7 @@ def weight_filename(family: str, scale: str) -> str:
 
 
 _TOP_KEYS = {"name", "device", "runs", "detector", "trackeval", "keep_tracks", "reid_weights",
-             "detectors", "trackers", "sequences", "paths", "save_detections", "shared_detection"}
+             "detectors", "trackers", "sequences", "paths"}
 _SECTION_KEYS = {"detector": {"conf", "imgsz", "half"},
                  "trackeval": {"root", "python", "do_preproc"},
                  "paths": {"output_root", "dataset_root", "prepared_root"}}
@@ -74,8 +68,6 @@ MODES = ("nms", "end2end")
 
 
 def _validate(data: dict, path) -> None:
-    # A misspelled key would otherwise be ignored silently, for instance changing the
-    # measurement protocol without notice.
     problems = [f"unknown key '{k}'" for k in sorted(set(data) - _TOP_KEYS)]
     for section, keys in _SECTION_KEYS.items():
         problems += [f"unknown key '{section}.{k}'"
@@ -111,13 +103,10 @@ def load_config(path: str | Path) -> Config:
         reid_weights=data.get("reid_weights", ""),
         detectors=detectors,
         trackers=list(data["trackers"]),
-        # MOT17 names drop the detector suffix (MOT17-02-FRCNN is MOT17-02), as prepare names them.
         sequences={k: [canonical_name(k, s) for s in v] for k, v in data["sequences"].items()},
         output_root=paths.get("output_root", "results"),
         dataset_root=paths.get("dataset_root", "datasets"),
         prepared_root=paths.get("prepared_root", "prepared"),
-        save_detections=bool(data.get("save_detections", False)),
-        shared_detection=bool(data.get("shared_detection", False)),
     )
 
 
@@ -141,64 +130,3 @@ def expand_grid(cfg: Config) -> list[RunSpec]:
                                     reid_weights=reid,
                                 ))
     return specs
-
-
-# Distributions pinned in requirements.txt, by pip name: boxmot.__version__ lags its pip
-# metadata (16.0.10 vs 16.0.11), so the metadata is the reliable source.
-PINNED_DISTRIBUTIONS = ["torch", "torchvision", "ultralytics", "boxmot", "opencv-python",
-                        "numpy", "pandas", "scipy"]
-
-
-def git_commit(repo: str | Path = ".") -> str:
-    # Without its own .git, `git -C` would walk up and report the enclosing repository.
-    if not (Path(repo) / ".git").exists():
-        return "unknown"
-    try:
-        out = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
-                             capture_output=True, text=True, check=False)
-        return out.stdout.strip() or "unknown"
-    except Exception:
-        return "unknown"
-
-
-def _lib_versions() -> dict[str, str]:
-    from importlib import metadata
-
-    versions: dict[str, str] = {}
-    for dist in PINNED_DISTRIBUTIONS:
-        try:
-            versions[dist] = metadata.version(dist)
-        except metadata.PackageNotFoundError:
-            versions[dist] = "not-installed"
-    return versions
-
-
-def _gpu_name() -> str:
-    try:
-        import torch
-        return torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none"
-    except Exception:
-        return "unknown"
-
-
-def environment_manifest(cfg: Config) -> dict:
-    return {
-        "experiment": cfg.name,
-        "git_commit": git_commit(),
-        "platform": platform.platform(),
-        "gpu": _gpu_name(),
-        "python": platform.python_version(),
-        "device": cfg.device,
-        "half": cfg.half,
-        "conf": cfg.conf,
-        "imgsz": cfg.imgsz,
-        "nms_iou": 0.7,
-        "do_preproc": cfg.do_preproc,
-        "cudnn_benchmark": True,
-        "cudnn_deterministic": False,
-        "shared_detection": cfg.shared_detection,
-        "save_detections": cfg.save_detections,
-        "runs": cfg.runs,
-        "library_versions": _lib_versions(),
-        "trackeval": {"commit": git_commit(cfg.trackeval_root)},
-    }
